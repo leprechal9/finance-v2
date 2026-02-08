@@ -1,8 +1,14 @@
-const CACHE_NAME = 'finance-v50'; // Mude para v9!
-const ASSETS = ['/', '/index.html', '/style.css', '/main.js', '/manifest.json'];
+const CACHE_NAME = 'finance-v50'; 
+const ASSETS = [
+  './',
+  './index.html',
+  './style.css',
+  './script.js', // Corrigido de main.js para script.js
+  './manifest.json',
+  './version.txt'
+];
 
 self.addEventListener('install', event => {
-  // Removi o skipWaiting daqui para ele dar tempo do main.js perceber a mudança
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
   );
@@ -18,6 +24,13 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
-  event.respondWith(caches.match(event.request).then(res => res || fetch(event.request)));
+  const url = event.request.url;
+  // Se for uma busca de versão ou script com v=, vai direto pra rede
+  if (url.includes('version.txt') || url.includes('?v=')) {
+    event.respondWith(fetch(event.request));
+  } else {
+    event.respondWith(
+      caches.match(event.request).then(res => res || fetch(event.request))
+    );
+  }
 });
-

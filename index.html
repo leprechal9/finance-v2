@@ -10,7 +10,6 @@
   <meta name="theme-color" content="#6366f1">
   <meta name="apple-mobile-web-app-capable" content="yes">
 </head>
-
 <body>
   <div id="app">
     <header class="app-header">
@@ -19,24 +18,24 @@
         <div><small>Bem-vindo</small><h2>Finance<span>Pro 2.0</span></h2></div>
       </div>
       <div id="update-banner" class="update-notification modal-hidden">
-    <span>Nova versão disponível!</span>
-    <button onclick="window.location.reload()">Atualizar Agora</button>
-</div>
+        <span>Nova versão disponível!</span>
+        <button onclick="window.location.reload(true)">Atualizar Agora</button>
+      </div>
       <div class="header-actions">
         <button class="config-btn" onclick="toggleQR()"><i class="fas fa-qrcode"></i></button>
         <button class="export-btn" onclick="exportToWhatsApp()"><i class="fab fa-whatsapp"></i></button>
         <button class="config-btn" onclick="clearAll()"><i class="fas fa-trash-alt"></i></button>
+        <button class="config-btn" onclick="forceUpdateCheck()" id="update-icon">
+          <i class="fas fa-sync-alt"></i>
+        </button>
       </div>
-      <button class="config-btn" onclick="forceUpdateCheck()" id="update-icon">
-  <i class="fas fa-sync-alt"></i>
-</button>
     </header>
 
     <div id="qr-modal" class="modal-overlay modal-hidden" onclick="toggleQR()">
       <div class="modal qr-content" onclick="event.stopPropagation()">
         <h3>Compartilhar App</h3>
         <img id="qr-img" src="" alt="Gerando QR Code...">
-        <p><small>Aponte a câmera para instalar o app em outro celular</small></p>
+        <p><small>Aponte a câmera para instalar</small></p>
         <button class="btn-cancel" onclick="toggleQR()">Fechar</button>
       </div>
     </div>
@@ -56,9 +55,9 @@
 
     <div class="ai-assistant">
       <div id="notif-bubble" class="chat-bubble">
-        <div class="bot-icon" id="notif-icon"><i class="fas fa-bell"></i></div>
+        <div class="bot-icon"><i class="fas fa-bell"></i></div>
         <div class="bot-text">
-          <small id="notif-status">SISTEMA</small>
+          <small>SISTEMA</small>
           <p id="ai-message">Olá! Vamos organizar sua grana?</p>
         </div>
       </div>
@@ -70,7 +69,6 @@
       <button class="filter-chip" onclick="filterBy('🍔 Alimentação')">🍔</button>
       <button class="filter-chip" onclick="filterBy('🚗 Transporte')">🚗</button>
       <button class="filter-chip" onclick="filterBy('🏠 Casa')">🏠</button>
-      <button class="filter-chip" onclick="filterBy('🎭 Lazer')">🎭</button>
     </div>
 
     <div class="action-grid">
@@ -105,6 +103,6 @@
       </div>
     </div>
   </div>
-  <script src="main.js?v=11"></script>
+  <script src="script.js?v=10"></script>
 </body>
 </html>

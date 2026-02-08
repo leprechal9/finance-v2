@@ -3,14 +3,15 @@ let myGoal = localStorage.getItem('finance-goal') || 1000;
 let currentType = 'income';
 let currentFilter = 'all';
 
-// Elementos DOM
+const APP_VERSION = 10; // Versão atual
+
 const balanceDisplay = document.getElementById('balance');
 const list = document.getElementById('transactions');
 const modal = document.getElementById('modal-overlay');
 const form = document.getElementById('transaction-form');
 const aiMessage = document.getElementById('ai-message');
 
-// Funções do Modal
+// Funções de Interface
 window.openModal = (type) => {
     currentType = type;
     modal.classList.remove('modal-hidden');
@@ -19,7 +20,6 @@ window.openModal = (type) => {
 };
 window.closeModal = () => { modal.classList.add('modal-hidden'); form.reset(); };
 
-// Filtros e Metas
 window.filterBy = (cat) => {
     currentFilter = cat;
     document.querySelectorAll('.filter-chip').forEach(btn => {
@@ -33,7 +33,14 @@ window.setGoal = () => {
     if(v) { myGoal = v; localStorage.setItem('finance-goal', v); render(); }
 };
 
-// WhatsApp e QR Code
+window.clearAll = () => {
+    if(confirm("Deseja apagar todos os dados?")) {
+        transactions = [];
+        localStorage.removeItem('transactions');
+        render();
+    }
+};
+
 window.exportToWhatsApp = () => {
     let total = transactions.reduce((acc, t) => acc + t.amount, 0);
     let texto = `*FinancePro Ultra*%0A*Saldo:* R$ ${total.toFixed(2)}%0A%0A*Últimos Gastos:*%0A`;
@@ -53,18 +60,18 @@ window.toggleQR = () => {
 // Lógica de Dados
 form.addEventListener('submit', (e) => {
     e.preventDefault();
+    const valInput = document.getElementById('val').value;
     const t = {
         id: Date.now(),
         text: document.getElementById('desc').value,
         category: document.getElementById('category').value,
-        amount: currentType === 'income' ? Math.abs(document.getElementById('val').value) : -Math.abs(document.getElementById('val').value),
+        amount: currentType === 'income' ? Math.abs(valInput) : -Math.abs(valInput),
         date: new Date().toLocaleDateString('pt-BR')
     };
     transactions.push(t);
     localStorage.setItem('transactions', JSON.stringify(transactions));
     render();
     closeModal();
-    // Notificação instantânea
     aiMessage.innerText = `${t.amount > 0 ? '✅ Ganhou' : '🔴 Gastou'} R$ ${Math.abs(t.amount).toFixed(2)} em ${t.text}`;
 });
 
@@ -80,8 +87,11 @@ function render() {
     filtered.slice().reverse().forEach(t => {
         const li = document.createElement('li');
         li.className = 'timeline-item';
-        li.innerHTML = `<div class="transaction-info"><div class="category-icon">${t.category.split(' ')[0]}</div>
-            <div><strong>${t.text}</strong><br><small>${t.date}</small></div></div>
+        li.innerHTML = `
+            <div class="transaction-info">
+                <div class="category-icon">${t.category.split(' ')[0]}</div>
+                <div><strong>${t.text}</strong><br><small>${t.date}</small></div>
+            </div>
             <span class="${t.amount > 0 ? 'val-in' : 'val-out'}">R$ ${Math.abs(t.amount).toFixed(2)}</span>`;
         list.appendChild(li);
     });
@@ -93,59 +103,47 @@ function render() {
     document.getElementById('goal-fill').style.background = p > 80 ? "#ef4444" : "#6366f1";
 }
 
+// Lógica de Atualização (PWA + Manual)
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').then(reg => {
-        // 1. Checa se já tem uma atualização esperando (caso você tenha aberto o app agora)
-        if (reg.waiting) {
-            showUpdateBanner();
-        }
-
-        // 2. Checa se uma atualização chegou enquanto o app está aberto
         reg.addEventListener('updatefound', () => {
             const newWorker = reg.installing;
             newWorker.addEventListener('statechange', () => {
                 if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                    showUpdateBanner();
+                    document.getElementById('update-banner').classList.remove('modal-hidden');
                 }
             });
         });
     });
-
-    // Função para mostrar o banner
-    function showUpdateBanner() {
-        const banner = document.getElementById('update-banner');
-        if (banner) {
-            banner.classList.remove('modal-hidden');
-            // Opcional: vibrar o celular (se o navegador permitir)
-            if (navigator.vibrate) navigator.vibrate(200);
-        }
-    }
 }
-
-// No topo do seu main.js, defina a versão atual
-const APP_VERSION = 10; // Mude aqui toda vez que fizer deploy
 
 async function forceUpdateCheck() {
     const btn = document.getElementById('update-icon');
     btn.style.animation = "spin 1s linear infinite";
 
     try {
-        // Busca um arquivo de texto simples no seu servidor para ver a versão nova
-        const response = await fetch('version.txt', { cache: 'no-store' });
-        const latestVersion = await response.text();
+        const response = await fetch(`version.txt?t=${Date.now()}`, { cache: 'no-store' });
+        const text = await response.text();
+        const latestVersion = parseInt(text.trim());
 
-        if (parseInt(latestVersion) > APP_VERSION) {
-            alert("✨ Nova versão " + latestVersion + " encontrada! Atualizando...");
-            // Limpa o cache e recarrega
-            const cachesKeys = await caches.keys();
-            await Promise.all(cachesKeys.map(key => caches.delete(key)));
+        if (latestVersion > APP_VERSION) {
+            alert("✨ Nova versão " + latestVersion + " detectada!");
+            // Limpa TUDO para garantir o deploy novo
+            if ('serviceWorker' in navigator) {
+                const regs = await navigator.serviceWorker.getRegistrations();
+                for(let r of regs) await r.unregister();
+            }
+            const keys = await caches.keys();
+            await Promise.all(keys.map(k => caches.delete(k)));
             window.location.reload(true);
         } else {
-            alert("✅ Você já está na versão mais recente (" + APP_VERSION + ")");
+            alert("✅ Versão atualizada: " + APP_VERSION);
         }
     } catch (error) {
-        alert("Ops! Verifique sua conexão.");
+        alert("Erro ao verificar versão.");
     } finally {
         btn.style.animation = "none";
     }
 }
+
+render();
